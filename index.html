@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Formulario</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --question: #7a3d7c;
+      --answer: #c384c5;
+      --background: #ffffff;
+      --muted: rgba(122, 61, 124, 0.62);
+      --danger: #8c0303;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      background: var(--background);
+      color: var(--question);
+      font-family: Karla, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow: hidden;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    .progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: rgba(195, 132, 197, 0.24);
+      z-index: 3;
+    }
+
+    .progress__bar {
+      height: 100%;
+      width: 0;
+      background: var(--answer);
+      transition: width 240ms ease;
+    }
+
+    .screen {
+      display: none;
+      min-height: 100vh;
+      padding: 72px 24px 88px;
+      overflow-y: auto;
+    }
+
+    .screen.is-active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: rise 260ms ease both;
+    }
+
+    .content {
+      width: min(100%, 720px);
+    }
+
+    .welcome .content,
+    .thanks .content {
+      text-align: center;
+      width: min(100%, 620px);
+    }
+
+    h1,
+    h2 {
+      margin: 0;
+      color: var(--question);
+      font-weight: 400;
+      line-height: 1.18;
+    }
+
+    h1 {
+      font-size: clamp(32px, 7vw, 52px);
+    }
+
+    h2 {
+      font-size: clamp(28px, 5.8vw, 44px);
+    }
+
+    .description {
+      margin: 22px 0 0;
+      color: var(--question);
+      font-size: clamp(18px, 2.5vw, 24px);
+      line-height: 1.35;
+    }
+
+    .question-title {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .number {
+      padding-top: 8px;
+      color: var(--question);
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .required {
+      color: var(--danger);
+    }
+
+    .answer-wrap {
+      margin-top: 36px;
+      padding-left: 42px;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      border: 0;
+      border-bottom: 2px solid rgba(195, 132, 197, 0.42);
+      border-radius: 0;
+      outline: 0;
+      color: var(--answer);
+      background: transparent;
+      font-size: clamp(24px, 4vw, 34px);
+      line-height: 1.25;
+      padding: 0 0 12px;
+      transition: border-color 180ms ease;
+    }
+
+    textarea {
+      min-height: 150px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-bottom-color: var(--answer);
+    }
+
+    ::placeholder {
+      color: rgba(195, 132, 197, 0.62);
+      opacity: 1;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 28px;
+      padding-left: 42px;
+    }
+
+    .welcome .actions,
+    .thanks .actions {
+      justify-content: center;
+      padding-left: 0;
+    }
+
+    .button {
+      border: 0;
+      border-radius: 4px;
+      background: var(--answer);
+      color: #ffffff;
+      cursor: pointer;
+      font-weight: 700;
+      min-height: 48px;
+      padding: 0 18px;
+      box-shadow: rgba(122, 61, 124, 0.18) 0 3px 10px;
+      transition: transform 120ms ease, filter 120ms ease;
+    }
+
+    .button:hover {
+      filter: brightness(0.96);
+      transform: translateY(-1px);
+    }
+
+    .button:disabled,
+    .nav button:disabled {
+      cursor: not-allowed;
+      filter: grayscale(0.25);
+      opacity: 0.58;
+      transform: none;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .error {
+      min-height: 22px;
+      margin-top: 12px;
+      padding-left: 42px;
+      color: var(--danger);
+      font-size: 15px;
+    }
+
+    .honeypot {
+      position: absolute;
+      left: -10000px;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .consent {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      margin: 22px 0 0 42px;
+      color: var(--question);
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .consent input[type="checkbox"] {
+      flex: 0 0 20px;
+      width: 20px;
+      height: 20px;
+      margin: 2px 0 0;
+      padding: 0;
+      border: 0;
+      accent-color: var(--answer);
+    }
+
+    .privacy-note {
+      margin: 10px 0 0 42px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .nav {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      display: flex;
+      overflow: hidden;
+      border-radius: 4px;
+      box-shadow: rgba(122, 61, 124, 0.14) 0 2px 8px;
+      z-index: 2;
+    }
+
+    .nav button {
+      width: 36px;
+      height: 32px;
+      border: 0;
+      border-right: 1px solid rgba(255, 255, 255, 0.42);
+      background: var(--answer);
+      color: #ffffff;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .nav button:last-child {
+      border-right: 0;
+    }
+
+    .branding {
+      position: fixed;
+      left: 16px;
+      bottom: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      z-index: 2;
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        overflow: auto;
+      }
+
+      .screen {
+        padding: 52px 20px 92px;
+      }
+
+      .screen.is-active {
+        align-items: flex-start;
+        padding-top: 118px;
+      }
+
+      .answer-wrap,
+      .actions,
+      .error,
+      .consent,
+      .privacy-note {
+        padding-left: 0;
+      }
+
+      .consent,
+      .privacy-note {
+        margin-left: 0;
+      }
+
+      .question-title {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .number {
+        padding-top: 0;
+      }
+
+      .hint {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true"><div class="progress__bar" id="progressBar"></div></div>
+  <input class="honeypot" id="website" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+  <main id="form" aria-live="polite">
+    <section class="screen welcome is-active" data-screen="welcome">
+      <div class="content">
+        <h1>Bienvenida!</h1>
+        <p class="description">Si tienes más de 40 y quieres volver a sentirte ligera, con energía y en control sin vivir a dieta, rellena este formulario.</p>
+        <div class="actions">
+          <button class="button" type="button" data-next>Start</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="question">
+      <div class="content">
+        <div class="question-title">
+          <span class="number">1&nbsp;→</span>
+          <h2>Nombre y apelidos <span class="required">*</span></h2>
+        </div>
+        <div class="answer-wrap">
+          <input id="name" name="name" type="text" autocomplete="name" placeholder="Escribe tu respuesta aquí" required>
+        </div>
+        <p class="error" aria-live="assertive"></p>
+        <div class="actions">
+          <button class="button" type="button" data-next>OK</button>
+          <span class="hint">presiona Enter ↵</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="question">
+      <div class="content">
+        <div class="question-title">
+          <span class="number">2&nbsp;→</span>
+          <h2>¿Cuántos años tienes? <span class="required">*</span></h2>
+        </div>
+        <div class="answer-wrap">
+          <input id="age" name="age" type="text" inputmode="numeric" placeholder="Escribe tu respuesta aquí" required>
+        </div>
+        <p class="error" aria-live="assertive"></p>
+        <div class="actions">
+          <button class="button" type="button" data-next>OK</button>
+          <span class="hint">presiona Enter ↵</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="question">
+      <div class="content">
+        <div class="question-title">
+          <span class="number">3&nbsp;→</span>
+          <h2>¿Cuánto tiempo llevas intentando conseguirlo y qué te ha impedido lograrlo? <span class="required">*</span></h2>
+        </div>
+        <div class="answer-wrap">
+          <textarea id="attempts" name="attempts" placeholder="Escribe tu respuesta aquí" required></textarea>
+        </div>
+        <p class="error" aria-live="assertive"></p>
+        <div class="actions">
+          <button class="button" type="button" data-next>OK</button>
+          <span class="hint">presiona Ctrl + Enter ↵</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="question">
+      <div class="content">
+        <div class="question-title">
+          <span class="number">4&nbsp;→</span>
+          <h2>¿Cuál es tu principal objetivo?</h2>
+        </div>
+        <div class="answer-wrap">
+          <input id="goal" name="goal" type="text" placeholder="Escribe tu respuesta aquí">
+        </div>
+        <p class="error" aria-live="assertive"></p>
+        <div class="actions">
+          <button class="button" type="button" data-next>OK</button>
+          <span class="hint">presiona Enter ↵</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="question">
+      <div class="content">
+        <div class="question-title">
+          <span class="number">5&nbsp;→</span>
+          <h2>¿Cómo crees que esta guía podría ayudarte a llevar mejor el verano? <span class="required">*</span></h2>
+        </div>
+        <div class="answer-wrap">
+          <textarea id="guide" name="guide" placeholder="Escribe tu respuesta aquí" required></textarea>
+        </div>
+        <p class="error" aria-live="assertive"></p>
+        <div class="actions">
+          <button class="button" type="button" data-next>OK</button>
+          <span class="hint">presiona Ctrl + Enter ↵</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="question">
+      <div class="content">
+        <div class="question-title">
+          <span class="number">6&nbsp;→</span>
+          <h2>¿Qué supondría para ti conseguirlo? <span class="required">*</span></h2>
+        </div>
+        <div class="answer-wrap">
+          <textarea id="meaning" name="meaning" placeholder="Escribe tu respuesta aquí" required></textarea>
+        </div>
+        <p class="error" aria-live="assertive"></p>
+        <div class="actions">
+          <button class="button" type="button" data-next>OK</button>
+          <span class="hint">presiona Ctrl + Enter ↵</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="question">
+      <div class="content">
+        <div class="question-title">
+          <span class="number">7&nbsp;→</span>
+          <h2>¿Me facilitas tu número de teléfono para ponerme en contacto contigo y facilitarte tu "Guía de Verano +40 sin culpa"? <span class="required">*</span></h2>
+        </div>
+        <div class="answer-wrap">
+          <input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="+34 600 000 000" required>
+        </div>
+        <label class="consent">
+          <input id="consent" name="consent" type="checkbox" required>
+          <span>Acepto que mis datos sean utilizados para contactarme y enviarme la guía solicitada.</span>
+        </label>
+        <p class="privacy-note">Usaremos tus datos únicamente para contactarte y enviarte la guía solicitada.</p>
+        <p class="error" aria-live="assertive"></p>
+        <div class="actions">
+          <button class="button" type="button" data-next>Enviar</button>
+          <span class="hint">presiona Enter ↵</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen thanks" data-screen="thanks">
+      <div class="content">
+        <h2>Gracias por contarme tu caso.<br>Voy a leer tus respuestas personalmente. En breve te contactaré para facilitarte tu guía "Verano +40 sin culpa"</h2>
+      </div>
+    </section>
+  </main>
+
+  <div class="branding">Powered by Typeform</div>
+  <nav class="nav" aria-label="Navegación del formulario">
+    <button type="button" id="prevBtn" aria-label="Pregunta anterior">↑</button>
+    <button type="button" id="nextBtn" aria-label="Pregunta siguiente">↓</button>
+  </nav>
+
+  <script>
+    const WEB_APP_URL = '/api/submit';
+
+    const screens = Array.from(document.querySelectorAll('.screen'));
+    const progressBar = document.getElementById('progressBar');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const submitButton = document.querySelector('#phone')?.closest('.screen')?.querySelector('[data-next]');
+    const submissionId = getSubmissionId();
+
+    let current = 0;
+    let isSubmitting = false;
+
+    function activeField() {
+      return screens[current].querySelector('input:not([type="checkbox"]):not(.honeypot), textarea');
+    }
+
+    function setError(message) {
+      const error = screens[current].querySelector('.error');
+      if (error) error.textContent = message || '';
+    }
+
+    function isCurrentValid() {
+      const requiredFields = Array.from(screens[current].querySelectorAll('input[required], textarea[required]'));
+      setError('');
+
+      for (const field of requiredFields) {
+        if (field.type === 'checkbox') {
+          if (!field.checked) {
+            setError('Debes aceptar el consentimiento para enviar el formulario.');
+            field.focus();
+            return false;
+          }
+          continue;
+        }
+
+        if (!field.value.trim()) {
+          setError('Esta pregunta es obligatoria.');
+          field.focus();
+          return false;
+        }
+      }
+
+      if (screens[current].querySelector('#phone')) {
+        const phoneDigits = getValue('phone').replace(/\D/g, '');
+        if (phoneDigits.length < 8 || phoneDigits.length > 15) {
+          setError('Introduce un teléfono válido.');
+          document.getElementById('phone').focus();
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    function show(index) {
+      if (isSubmitting) return;
+
+      current = Math.max(0, Math.min(index, screens.length - 1));
+      screens.forEach((screen, screenIndex) => {
+        screen.classList.toggle('is-active', screenIndex === current);
+      });
+
+      const questionCount = screens.filter(screen => screen.dataset.screen === 'question').length;
+      const answeredScreens = Math.max(0, Math.min(current, questionCount));
+      progressBar.style.width = `${(answeredScreens / questionCount) * 100}%`;
+      prevBtn.disabled = current === 0;
+      nextBtn.disabled = current === screens.length - 1;
+
+      setTimeout(() => {
+        const field = activeField();
+        if (field) field.focus();
+      }, 80);
+    }
+
+    function getValue(id) {
+      const field = document.getElementById(id);
+      return field ? field.value.trim() : '';
+    }
+
+    function getSubmissionId() {
+      if (window.crypto && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+
+      return `submission_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    }
+
+    function collectPayload() {
+      return {
+        website: getValue('website'),
+        submissionId,
+        name: getValue('name'),
+        age: getValue('age'),
+        attempts: getValue('attempts'),
+        goal: getValue('goal'),
+        guide: getValue('guide'),
+        meaning: getValue('meaning'),
+        phone: getValue('phone'),
+        consent: Boolean(document.getElementById('consent')?.checked),
+        origin: window.location.origin,
+        pageUrl: window.location.href,
+        userAgent: navigator.userAgent
+      };
+    }
+
+    function isSubmitScreen() {
+      return Boolean(screens[current].querySelector('#phone'));
+    }
+
+    function setSubmitting(state) {
+      isSubmitting = state;
+
+      if (submitButton) {
+        submitButton.textContent = state ? 'Enviando...' : 'Enviar';
+        submitButton.disabled = state;
+      }
+
+      prevBtn.disabled = state || current === 0;
+      nextBtn.disabled = state || current === screens.length - 1;
+    }
+
+    function getSubmitErrorMessage(error) {
+      if (error.message === 'ORIGEN_NO_PERMITIDO') {
+        return 'Este dominio no está permitido en Apps Script.';
+      }
+
+      return 'No se pudo enviar. Revisa tu conexión e inténtalo de nuevo.';
+    }
+
+    async function submitForm() {
+      if (isSubmitting) return;
+      if (!isCurrentValid()) return;
+
+      setSubmitting(true);
+      setError('');
+
+      try {
+        const response = await fetch(WEB_APP_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain'
+          },
+          body: JSON.stringify(collectPayload())
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.ok) {
+          throw new Error(result.error || 'SERVER_ERROR');
+        }
+
+        setSubmitting(false);
+        show(screens.length - 1);
+      } catch (error) {
+        setSubmitting(false);
+        setError(getSubmitErrorMessage(error));
+      }
+    }
+
+    function next() {
+      if (isSubmitScreen()) {
+        submitForm();
+        return;
+      }
+
+      if (!isCurrentValid()) return;
+      show(current + 1);
+    }
+
+    function prev() {
+      show(current - 1);
+    }
+
+    document.querySelectorAll('[data-next]').forEach(button => {
+      button.addEventListener('click', next);
+    });
+
+    prevBtn.addEventListener('click', prev);
+    nextBtn.addEventListener('click', next);
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'ArrowUp') prev();
+      if (event.key === 'ArrowDown') next();
+      if (event.key !== 'Enter') return;
+
+      const field = activeField();
+      if (field && field.tagName === 'TEXTAREA' && !event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      next();
+    });
+
+    show(0);
+  </script>
+</body>
+</html>
