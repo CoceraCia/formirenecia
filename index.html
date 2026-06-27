@@ -515,6 +515,7 @@
       for (const field of requiredFields) {
         if (field.type === 'checkbox') {
           if (!field.checked) {
+            console.log('[form] validation failed: consent unchecked');
             setError('Debes aceptar el consentimiento para enviar el formulario.');
             field.focus();
             return false;
@@ -523,6 +524,7 @@
         }
 
         if (!field.value.trim()) {
+          console.log('[form] validation failed: required field empty:', field.id);
           setError('Esta pregunta es obligatoria.');
           field.focus();
           return false;
@@ -531,7 +533,9 @@
 
       if (screens[current].querySelector('#phone')) {
         const phoneDigits = getValue('phone').replace(/\D/g, '');
+        console.log('[form] phone digits:', phoneDigits, '| length:', phoneDigits.length);
         if (phoneDigits.length < 8 || phoneDigits.length > 15) {
+          console.log('[form] validation failed: phone invalid');
           setError('Introduce un teléfono válido.');
           document.getElementById('phone').focus();
           return false;
@@ -545,6 +549,7 @@
       if (isSubmitting) return;
 
       current = Math.max(0, Math.min(index, screens.length - 1));
+      console.log('[form] show screen', current, '|', screens[current]?.dataset?.screen);
       screens.forEach((screen, screenIndex) => {
         screen.classList.toggle('is-active', screenIndex === current);
       });
@@ -620,6 +625,9 @@
       if (isSubmitting) return;
       if (!isCurrentValid()) return;
 
+      const payload = collectPayload();
+      console.log('[form] submitting payload:', JSON.stringify(payload));
+
       setSubmitting(true);
       setError('');
 
@@ -629,18 +637,21 @@
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(collectPayload())
+          body: JSON.stringify(payload)
         });
 
         const result = await response.json();
+        console.log('[form] response status:', response.status, '| result:', JSON.stringify(result));
 
         if (!response.ok || !result.ok) {
           throw new Error(result.error || 'SERVER_ERROR');
         }
 
+        console.log('[form] submit success');
         setSubmitting(false);
         show(screens.length - 1);
       } catch (error) {
+        console.log('[form] submit error:', error?.message || error);
         setSubmitting(false);
         setError(getSubmitErrorMessage(error));
       }
