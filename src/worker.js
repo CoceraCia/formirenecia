@@ -1,35 +1,53 @@
-export async function onRequestPost(context) {
-  const { request, env } = context;
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+
+    if (url.pathname === '/api/submit' || url.pathname === '/api/submit/') {
+      return handleSubmit(request, env);
+    }
+
+    if (url.pathname.startsWith('/api/')) {
+      return json({ ok: false, error: 'NOT_FOUND' }, 404);
+    }
+
+    return env.ASSETS.fetch(request);
+  }
+};
+
+async function handleSubmit(request, env) {
+  if (request.method === 'GET') {
+    return json({ ok: true, message: 'Submit endpoint activo' });
+  }
+
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 204 });
+  }
+
+  if (request.method !== 'POST') {
+    return json({ ok: false, error: 'METHOD_NOT_ALLOWED' }, 405);
+  }
 
   try {
-    const origin = request.headers.get('Origin') || '';
+    const origin = request.headers.get('Origin') || new URL(request.url).origin;
     const allowedOrigins = getAllowedOrigins(env);
-    console.log('[submit] origin:', origin, '| allowedOrigins:', allowedOrigins);
 
     if (allowedOrigins.length && !allowedOrigins.includes(origin)) {
-      console.log('[submit] ORIGEN_NO_PERMITIDO');
       return json({ ok: false, error: 'ORIGEN_NO_PERMITIDO' }, 403);
     }
 
-    
     const contentLength = Number(request.headers.get('Content-Length') || 0);
-    console.log('[submit] contentLength:', contentLength);
 
     if (contentLength > 20000) {
-      console.log('[submit] PAYLOAD_DEMASIADO_GRANDE');
       return json({ ok: false, error: 'PAYLOAD_DEMASIADO_GRANDE' }, 413);
     }
 
     if (!env.GOOGLE_SCRIPT_URL || !env.FORM_TOKEN) {
-      console.log('[submit] CONFIGURACION_INCOMPLETA — GOOGLE_SCRIPT_URL:', !!env.GOOGLE_SCRIPT_URL, '| FORM_TOKEN:', !!env.FORM_TOKEN);
       return json({ ok: false, error: 'CONFIGURACION_INCOMPLETA' }, 500);
     }
 
     const payload = await request.json();
-    console.log('[submit] payload:', JSON.stringify(payload));
-
     const validation = validatePayload(payload);
-    console.log('[submit] validation:', JSON.stringify(validation));
+
     if (!validation.ok) {
       return json(validation, 400);
     }
@@ -46,27 +64,23 @@ export async function onRequestPost(context) {
       })
     });
 
-    const result = await googleResponse.json();
-    console.log('[submit] googleResponse.status:', googleResponse.status, '| result:', JSON.stringify(result));
+    const result = await readJson(googleResponse);
+
+    if (!result) {
+      return json({ ok: false, error: 'GOOGLE_SCRIPT_INVALID_RESPONSE' }, 502);
+    }
 
     if (!googleResponse.ok || !result.ok) {
-      console.log('[submit] GOOGLE_SCRIPT_ERROR');
       return json({
         ok: false,
         error: result.error || 'GOOGLE_SCRIPT_ERROR'
       }, 400);
     }
 
-    console.log('[submit] success');
     return json({ ok: true });
   } catch (error) {
-    console.log('[submit] caught error:', error?.message || error);
     return json({ ok: false, error: 'SERVER_ERROR' }, 500);
   }
-}
-
-export async function onRequestGet() {
-  return json({ ok: true, message: 'Submit endpoint activo' });
 }
 
 function getAllowedOrigins(env) {
@@ -104,6 +118,14 @@ function validatePayload(payload) {
   }
 
   return { ok: true };
+}
+
+async function readJson(response) {
+  try {
+    return await response.json();
+  } catch (error) {
+    return null;
+  }
 }
 
 function json(payload, status = 200) {
