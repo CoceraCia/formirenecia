@@ -2,6 +2,10 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    if (url.pathname === '/api/debug' || url.pathname === '/api/debug/') {
+      return handleDebug(request, env);
+    }
+
     if (url.pathname === '/api/submit' || url.pathname === '/api/submit/') {
       return handleSubmit(request, env);
     }
@@ -28,11 +32,11 @@ async function handleSubmit(request, env) {
   }
 
   try {
-    const origin = request.headers.get('Origin') || new URL(request.url).origin;
+    const origin = normalizeOrigin(request.headers.get('Origin') || new URL(request.url).origin);
     const allowedOrigins = getAllowedOrigins(env);
 
     if (allowedOrigins.length && !allowedOrigins.includes(origin)) {
-      return json({ ok: false, error: 'ORIGEN_NO_PERMITIDO' }, 403);
+      return json({ ok: false, error: 'ORIGEN_NO_PERMITIDO', origin }, 403);
     }
 
     const contentLength = Number(request.headers.get('Content-Length') || 0);
@@ -83,11 +87,40 @@ async function handleSubmit(request, env) {
   }
 }
 
+function handleDebug(request, env) {
+  const origin = normalizeOrigin(request.headers.get('Origin') || new URL(request.url).origin);
+
+  return json({
+    ok: true,
+    origin,
+    allowedOrigins: getAllowedOrigins(env),
+    hasGoogleScriptUrl: Boolean(env.GOOGLE_SCRIPT_URL),
+    hasFormToken: Boolean(env.FORM_TOKEN)
+  });
+}
+
 function getAllowedOrigins(env) {
   return String(env.ALLOWED_ORIGINS || env.ALLOWED_ORIGIN || '')
     .split(',')
-    .map((origin) => origin.trim())
+    .map(normalizeOrigin)
     .filter(Boolean);
+}
+
+function normalizeOrigin(origin) {
+  const value = String(origin || '')
+    .trim()
+    .replace(/^['"]|['"]$/g, '')
+    .replace(/\/$/, '');
+
+  if (!value) {
+    return '';
+  }
+
+  try {
+    return new URL(value).origin;
+  } catch (error) {
+    return value;
+  }
 }
 
 function validatePayload(payload) {
